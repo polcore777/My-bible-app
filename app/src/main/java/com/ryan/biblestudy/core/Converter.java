@@ -40,7 +40,8 @@ public final class Converter {
         for (String t : src.tableNames()) {
             if (t.equalsIgnoreCase("Details") || t.toLowerCase(Locale.ROOT).startsWith("msys")) continue;
             List<String> cols = lowerCols(src.columnNames(t));
-            if (has(cols, "book", "chapter", "verse", "scripture")) bibleT = t;
+            boolean hasBook = bookColumn(cols) != null;
+            if (hasBook && cols.contains("chapter") && cols.contains("verse") && cols.contains("scripture")) bibleT = t;
             else if (has(cols, "book", "chapterbegin", "versebegin")) verseT = t;
             else if (has(cols, "book", "chapter", "fromverse")) mysCmtT = t;
             else if (has(cols, "book", "chapter") && (cols.contains("comments") || cols.contains("notes"))) chapterT = t;
@@ -67,32 +68,35 @@ public final class Converter {
         res.type = type;
         info.put("type", type);
         info.put("source", fileName);
+        final int codepage = info.containsKey("codepage") ? Integer.parseInt(info.get("codepage")) : 1252;
         sink.begin(type);
         final int[] count = {0};
         final boolean[] strongs = {false};
 
         switch (type) {
-            case ModuleSink.BIBLE:
+            case ModuleSink.BIBLE: {
+                final String bookCol = bookColumn(lowerCols(src.columnNames(bibleT)));
                 src.scan(bibleT, row -> {
-                    int b = num(row.get("Book")), c = num(row.get("Chapter")), v = num(row.get("Verse"));
+                    int b = num(row.get(bookCol)), c = num(row.get("Chapter")), v = num(row.get("Verse"));
                     if (b <= 0 || c <= 0 || v < 0) return true;
-                    String html = bibleHtml(str(row.get("Scripture")), b, mysword);
+                    String html = bibleHtml(str(row.get("Scripture")), b, mysword, codepage);
                     if (html.contains("class=\"s\"")) strongs[0] = true;
                     sink.verse(b, c, v, html, Html.toPlain(html));
                     count[0]++;
                     return true;
                 });
                 break;
+            }
 
             case ModuleSink.COMMENTARY:
                 if (bookT != null) src.scan(bookT, row -> {
-                    sink.comment(num(row.get("Book")), 0, 0, 0, 0, body(row, mysword));
+                    sink.comment(num(row.get("Book")), 0, 0, 0, 0, body(row, mysword, codepage));
                     count[0]++;
                     return true;
                 });
                 if (chapterT != null) src.scan(chapterT, row -> {
                     int ch = num(row.get("Chapter"));
-                    sink.comment(num(row.get("Book")), ch, 0, ch, 0, body(row, mysword));
+                    sink.comment(num(row.get("Book")), ch, 0, ch, 0, body(row, mysword, codepage));
                     count[0]++;
                     return true;
                 });
@@ -102,7 +106,7 @@ public final class Converter {
                     int c2 = num(row.get("ChapterEnd")), v2 = num(row.get("VerseEnd"));
                     if (c2 <= 0) c2 = c1;
                     if (v2 <= 0) v2 = v1;
-                    sink.comment(b, c1, v1, c2, v2, body(row, mysword));
+                    sink.comment(b, c1, v1, c2, v2, body(row, mysword, codepage));
                     count[0]++;
                     return true;
                 });
@@ -110,7 +114,7 @@ public final class Converter {
                     int b = num(row.get("book")), c = num(row.get("chapter"));
                     int v1 = num(row.get("fromverse")), v2 = num(row.get("toverse"));
                     if (v2 <= 0) v2 = v1;
-                    sink.comment(b, c, v1, c, v2, body(row, mysword));
+                    sink.comment(b, c, v1, c, v2, body(row, mysword, codepage));
                     count[0]++;
                     return true;
                 });
@@ -127,7 +131,7 @@ public final class Converter {
                     if (sk != null) { key = sk; strongKeys[0]++; }
                     String raw = str(row.get("Definition"));
                     if (raw == null) raw = str(row.get("data"));
-                    String html = content(raw, false);
+                    String html = content(raw, false, codepage);
                     sink.entry(key, html, Html.toPlain(html));
                     count[0]++;
                     return true;
@@ -166,7 +170,7 @@ public final class Converter {
                     });
                     rows.sort((a, b) -> Integer.compare((Integer) a[0], (Integer) b[0]));
                     for (Object[] r : rows) {
-                        String html = content((String) r[2], false);
+                        String html = content((String) r[2], false, codepage);
                         String title = r[1] == null ? "" : ((String) r[1]).trim();
                         sink.section(count[0], title, html, Html.toPlain(html));
                         count[0]++;
@@ -180,7 +184,7 @@ public final class Converter {
                         if (raw == null) raw = str(row.get("Notes"));
                         if (raw == null) raw = str(row.get("Comments"));
                         String title = (m >= 1 && m <= 12) ? months[m - 1] + " " + d : ("Day " + d);
-                        String html = content(raw, false);
+                        String html = content(raw, false, codepage);
                         sink.section(m > 0 ? m * 100 + d : d, title, html, Html.toPlain(html));
                         count[0]++;
                         return true;
@@ -223,6 +227,13 @@ public final class Converter {
         if (rtl != null && (rtl.equals("1") || rtl.equalsIgnoreCase("true"))) out.put("rtl", "1");
         String ver = info.get("version");
         if (ver != null) out.put("version", ver);
+        // Legacy Greek/Hebrew modules store text as cp1253/cp1255 bytes under a named font.
+        String font = first(info, "font", "fontname");
+        if (font != null) {
+            String f = font.toLowerCase(Locale.ROOT);
+            if (f.contains("greek")) out.put("codepage", "1253");
+            else if (f.contains("hebrew")) out.put("codepage", "1255");
+        }
         return out;
     }
 
@@ -266,9 +277,10 @@ public final class Converter {
     private static final Pattern NUM_TAG = Pattern.compile("<num>\\s*([HGhg]?)0*(\\d{1,5})\\s*</num>");
     private static final Pattern BRACKET_NUM = Pattern.compile("\\[([HG])0*(\\d{1,5})]");
 
-    static String bibleHtml(String raw, int book, boolean mysword) {
-        String html = content(raw, mysword || Gbf.looksLikeGbf(raw));
-        String def = book <= 39 ? "H" : "G";
+    static String bibleHtml(String raw, int book, boolean mysword, int codepage) {
+        String html = content(raw, mysword || Gbf.looksLikeGbf(raw), codepage);
+        // Greek-font Bibles (e.g. the Septuagint) use Greek Strong's numbers for every book.
+        String def = codepage == 1253 ? "G" : (book <= 39 ? "H" : "G");
         html = strongify(SUP_NUM, html, def);
         html = strongify(NUM_TAG, html, def);
         html = strongify(BRACKET_NUM, html, def);
@@ -291,18 +303,22 @@ public final class Converter {
         return sb.toString();
     }
 
-    static String body(SourceDb.Row row, boolean mysword) {
+    static String body(SourceDb.Row row, boolean mysword, int codepage) {
         String raw = str(row.get("Comments"));
         if (raw == null) raw = str(row.get("Notes"));
         if (raw == null) raw = str(row.get("data"));
-        return content(raw, false);
+        return content(raw, false, codepage);
     }
 
     private static final Pattern HTML_TAG = Pattern.compile("<(p|br|b|i|u|span|div|font|sup|sub|a|h\\d|table|tr|td|ul|ol|li|em|strong|img|hr|blockquote)\\b", Pattern.CASE_INSENSITIVE);
 
     static String content(String raw, boolean gbf) {
+        return content(raw, gbf, 1252);
+    }
+
+    static String content(String raw, boolean gbf, int codepage) {
         if (raw == null) return "";
-        if (Rtf.looksLikeRtf(raw)) return Rtf.toHtml(raw);
+        if (Rtf.looksLikeRtf(raw)) return Rtf.toHtml(raw, codepage);
         if (gbf && Gbf.looksLikeGbf(raw)) return Html.sanitize(Gbf.toHtml(raw));
         if (HTML_TAG.matcher(raw).find()) return Html.sanitize(raw);
         return Html.fromPlain(raw);
@@ -319,6 +335,11 @@ public final class Converter {
     static boolean has(List<String> cols, String... names) {
         for (String n : names) if (!cols.contains(n)) return false;
         return true;
+    }
+
+    static String bookColumn(List<String> cols) {
+        for (String c : new String[]{"book", "book id", "bookid", "booknumber", "b"}) if (cols.contains(c)) return c;
+        return null;
     }
 
     static String titleColumn(List<String> cols) {

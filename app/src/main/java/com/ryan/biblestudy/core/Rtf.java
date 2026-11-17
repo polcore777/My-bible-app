@@ -29,6 +29,11 @@ public final class Rtf {
     }
 
     public static String toHtml(String rtf) {
+        return toHtml(rtf, 1252);
+    }
+
+    /** codepage decodes \\'xx byte escapes: 1252 default, 1253 for legacy Greek-font modules, 1255 Hebrew. */
+    public static String toHtml(String rtf, int codepage) {
         if (rtf == null) return "";
         List<int[]> colors = new ArrayList<>();
         colors.add(null); // index 0 = auto
@@ -67,7 +72,7 @@ public final class Rtf {
                         try {
                             int v = Integer.parseInt(hex, 16);
                             if (skipChars > 0) skipChars--;
-                            else if (!st.skip && !st.hidden) text.append(cp1252(v));
+                            else if (!st.skip && !st.hidden) text.append(decodeByte(v, codepage));
                         } catch (NumberFormatException e) { /* ignore */ }
                     } else p++;
                 } else if (d == '~') { if (!st.skip && !st.hidden) text.append(' '); p++; }
@@ -238,5 +243,23 @@ public final class Rtf {
     static char cp1252(int v) {
         if (v >= 0x80 && v <= 0x9F) return CP1252_80[v - 0x80];
         return (char) v;
+    }
+
+    private static java.nio.charset.Charset gk, hb;
+
+    /** Decodes one byte from an RTF \\'xx escape using the module's code page. */
+    static String decodeByte(int v, int codepage) {
+        if (v < 0x80) return String.valueOf((char) v);
+        try {
+            if (codepage == 1253) {
+                if (gk == null) gk = java.nio.charset.Charset.forName("windows-1253");
+                return new String(new byte[]{(byte) v}, gk);
+            }
+            if (codepage == 1255) {
+                if (hb == null) hb = java.nio.charset.Charset.forName("windows-1255");
+                return new String(new byte[]{(byte) v}, hb);
+            }
+        } catch (Exception ignored) { }
+        return String.valueOf(cp1252(v));
     }
 }
