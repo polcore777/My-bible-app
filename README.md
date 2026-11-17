@@ -5,8 +5,11 @@ old Access-based `.bbl/.cmt/.dct/.top/.map` files and the newer `.bblx/.bbli/.cm
 files) and **MySword** `.mybible` modules, converts each one into the app's own
 format on your phone, and keeps all your notes, highlights and bookmarks locally.
 
-It comes with the King James Version (with Strong's numbers), the Strong's Hebrew
-and Greek dictionaries, and a Bible-in-a-year reading plan built in.
+It comes with a full shelf built in: the **KJV+** (King James with Strong's numbers
+and New Testament tense/voice/mood parsing), six more public-domain Bibles (ASV, WEB,
+Berean, Darby, Douay-Rheims, Basic English), the Strong's Hebrew and Greek
+dictionaries, Hitchcock's Bible Names, Nave's Topical Bible, and a Bible-in-a-year
+reading plan.
 
 > Locked (password-protected) modules can't be opened. The books inside most of
 > them are public domain, so look for free unlocked copies on **biblesupport.com**
@@ -56,7 +59,13 @@ The APK lands in `app/build/outputs/apk/debug/`.
 
 ## Credits for the built-in texts
 
-- **King James Version** — public domain. Text from the Open Bibles project; Strong's
-  number placement from the public-domain "kjv" JSON dataset.
+- **KJV+** — public domain. Text from the Open Bibles project; Strong's number
+  placement from the public-domain "kjv" JSON dataset.
+- **New Testament morphology** (tense/voice/mood) — STEPBible Tagged Greek NT and
+  morphology codes, © Tyndale House Cambridge / STEPBible.org, licensed CC-BY 4.0.
 - **Strong's Hebrew and Greek Dictionaries** — James Strong (public domain); digital
   edition © Open Scriptures, licensed CC-BY-SA.
+- **ASV, WEB, Berean (BSB), Darby, Douay-Rheims, Basic English** — public domain,
+  from the Open Bibles collection.
+- **Hitchcock's Bible Names** (1869) and **Nave's Topical Bible** (1896) — public
+  domain; structured data © Brady Stephenson, licensed CC-BY 4.0.

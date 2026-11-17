@@ -281,13 +281,20 @@
     openSheet(Books.refText(b, c, v, v2, c2) + ' (' + abbr(S.bible) + ')', body);
   }
 
-  function showStrongs(key) {
+  function showStrongs(key, morphCode) {
     const k = key.toUpperCase().replace(/^([HG])0*/, '$1');
     const dicts = byType('dictionary').filter(m => m.strongs);
     const order = [S.strongsDict, ...dicts.map(d => d.id).filter(id => id !== S.strongsDict)];
     let html = '', used = '';
     for (const id of order) { if (!id) continue; html = B('entry', id, k); if (html) { used = id; break; } }
     const body = document.createElement('div');
+    const parsing = morphCode && window.MORPH && window.MORPH[morphCode];
+    if (parsing) {
+      const p = document.createElement('div');
+      p.className = 'card';
+      p.innerHTML = `<h3>This word here</h3><div class="mod">${esc(parsing)}</div>`;
+      body.appendChild(p);
+    }
     if (html) {
       body.appendChild(modHtml(html));
       const more = document.createElement('div');
@@ -301,7 +308,7 @@
 
   document.addEventListener('click', e => {
     const s = e.target.closest('sup.s, a.sref');
-    if (s) { e.preventDefault(); e.stopPropagation(); return showStrongs(s.dataset.s || s.textContent.trim()); }
+    if (s) { e.preventDefault(); e.stopPropagation(); return showStrongs(s.dataset.s || s.textContent.trim(), s.dataset.m); }
     const r = e.target.closest('a.ref');
     if (r) { e.preventDefault(); e.stopPropagation(); return showRef(r.dataset.ref); }
     const a = e.target.closest('a[href]');
