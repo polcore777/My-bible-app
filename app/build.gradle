@@ -1,0 +1,46 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.ryan.biblestudy'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.ryan.biblestudy"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    // The build works with no signing config: debug builds are signed with the
+    // auto-generated debug key, which is all you need to install it yourself.
+    buildTypes {
+        release {
+            minifyEnabled false
+            // fall back to the debug key so `assembleRelease` produces an installable APK
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // module databases are already compressed internals; don't re-compress at build time
+    androidResources {
+        noCompress 'db'
+    }
+
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/*.kotlin_module']
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.documentfile:documentfile:1.0.1'
+}

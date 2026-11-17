@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Bible</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body class="theme-light">
+<header id="top">
+  <button id="btnRef" class="ref-btn" aria-label="Choose book and chapter"><span id="refLabel">Genesis 1</span> <span class="caret">▾</span></button>
+  <button id="btnVersion" class="pill" aria-label="Choose Bible version">KJV</button>
+  <button id="btnText" class="icon" aria-label="Text settings">Aa</button>
+</header>
+
+<main id="content"></main>
+
+<div id="selbar" class="hidden">
+  <span id="selLabel"></span>
+  <div class="selbtns">
+    <button data-act="study">Study</button>
+    <button data-act="compare">Compare</button>
+    <button data-act="highlight">Highlight</button>
+    <button data-act="note">Note</button>
+    <button data-act="bookmark">Bookmark</button>
+    <button data-act="copy">Copy</button>
+    <button data-act="clear" aria-label="Clear selection">✕</button>
+  </div>
+</div>
+
+<nav id="tabs">
+  <button data-tab="read" class="on"><span class="ti">📖</span>Read</button>
+  <button data-tab="study"><span class="ti">📚</span>Study</button>
+  <button data-tab="search"><span class="ti">🔍</span>Search</button>
+  <button data-tab="notes"><span class="ti">📝</span>Notes</button>
+  <button data-tab="more"><span class="ti">☰</span>More</button>
+</nav>
+
+<div id="scrim" class="hidden"></div>
+<div id="sheets"></div>
+<div id="toast" class="hidden"></div>
+
+<script src="books.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

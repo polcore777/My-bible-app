@@ -1,0 +1,53 @@
+name: Build APK
+
+# Builds the installable app every time you push, and whenever you ask it to run.
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build the app
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Name the file something friendly
+        run: |
+          mkdir -p out
+          cp app/build/outputs/apk/debug/app-debug.apk "out/MyBible.apk"
+
+      - name: Upload the app (click here to download)
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyBible-APK
+          path: out/MyBible.apk
+          if-no-files-found: error
+
+      # Also attach the APK to a GitHub "Release" so it has a permanent download link.
+      - name: Publish a release
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: My Bible build ${{ github.run_number }}
+          files: out/MyBible.apk
+          body: |
+            Tap **MyBible.apk** below to download and install on your phone.
+            (You may need to allow installing apps from your browser the first time.)
