@@ -16,7 +16,8 @@
   // ------------------------------------------------------------------- state
   const DEFAULTS = {
     bible: 'kjv', parallel: [], b: 43, c: 1, v: 1, commentary: '', dict: '', strongsDict: 'strongs',
-    fs: 19, theme: 'light', strongs: true, redLetter: true, tab: 'read', planStart: '', searchHist: []
+    fs: 19, theme: 'light', strongs: true, redLetter: true, tab: 'read', planStart: '', searchHist: [],
+    peek: '', peekOn: true
   };
   let S = Object.assign({}, DEFAULTS);
   try { Object.assign(S, B('getSetting', 'state') || {}); } catch (e) { /* first run */ }
@@ -33,6 +34,8 @@
     const dicts = byType('dictionary');
     if (!dicts.find(m => m.id === S.strongsDict)) { const sd = dicts.find(m => m.strongs); S.strongsDict = sd ? sd.id : ''; }
     if (!dicts.find(m => m.id === S.dict)) S.dict = dicts.length ? dicts[0].id : '';
+    // tap-to-peek: default to the Ohienko Ukrainian Bible if present
+    if (!S.peek || !bibles.find(m => m.id === S.peek)) S.peek = bibles.find(m => m.id === 'ohienko') ? 'ohienko' : '';
   };
   const byType = t => MODS.filter(m => m.type === t);
   const mod = id => MODS.find(m => m.id === id);
@@ -143,6 +146,8 @@
     const maxV = Math.max(0, ...chapters.map(ch => ch.length ? ch[ch.length - 1][0] : 0));
     const maps = chapters.map(ch => new Map(ch.map(r => [r[0], r[1]])));
     const multi = ids.length > 1;
+    const peekOn = S.peekOn && S.peek && mod(S.peek) && S.peek !== S.bible;
+    const peekLabel = peekOn ? abbr(S.peek) : '';
     let h = `<div class="scripture"><div class="ch-head">${esc(Books.name(S.b))} ${S.c}</div>`;
     if (multi) h += `<div class="par-head" style="--cols:${ids.length}"><span></span>${ids.map(id => `<span>${esc(abbr(id))}</span>`).join('')}</div>`;
     if (!maxV) h += `<div class="empty">${esc(abbr(S.bible))} doesn't include ${esc(Books.name(S.b))} ${S.c}.</div>`;
@@ -151,9 +156,10 @@
       const hl = user.hl[v] ? ' hl-' + user.hl[v] : '';
       const marks = (user.notes[v] ? '✎' : '') + (user.bm.includes(v) ? '★' : '');
       const vn = v ? `<span class="vn">${v}</span>` : '';
+      const peek = (!multi && v && peekOn) ? `<a class="peek" data-v="${v}">${esc(peekLabel)}</a>` : '';
       if (!multi) {
         const rtl = mod(ids[0]).rtl ? ' rtl' : '';
-        h += `<div class="vs${hl}${rtl}" data-v="${v}">${vn}<span class="vt">${maps[0].get(v) || ''}</span>${marks ? `<span class="marks">${marks}</span>` : ''}</div>`;
+        h += `<div class="vs${hl}${rtl}" data-v="${v}">${vn}<span class="vt">${maps[0].get(v) || ''}</span>${peek}${marks ? `<span class="marks">${marks}</span>` : ''}</div>`;
       } else {
         h += `<div class="vs par${hl}" data-v="${v}" style="--cols:${ids.length}">${vn || '<span></span>'}${ids.map((id, i) =>
           `<div class="pv${mod(id).rtl ? ' rtl' : ''}"><span class="lab">${esc(abbr(id))}</span><span class="vt">${maps[i].get(v) || '<span class="muted">—</span>'}</span></div>`).join('')}${marks ? `<span class="marks">${marks}</span>` : ''}</div>`;
@@ -264,6 +270,23 @@
     openSheet('Compare ' + Books.refText(b, c, v), body);
   }
 
+  /** Tap-to-peek: show one verse in the chosen peek version (e.g. Ukrainian Ohienko). */
+  function showPeek(v) {
+    const m = mod(S.peek);
+    if (!m) return;
+    const h = B('verseText', S.peek, S.b, S.c, v);
+    const en = B('verseText', S.bible, S.b, S.c, v);
+    const body = document.createElement('div');
+    body.innerHTML = `<div class="card"><h3>${esc(abbr(S.bible))}</h3><div class="scripture">${en || ''}</div></div>`
+      + `<div class="card"><h3>${esc(m.abbr)} · ${esc(m.title)}</h3><div class="scripture${m.rtl ? ' rtl' : ''}">${h || '<span class="muted">Not in this version</span>'}</div></div>`
+      + `<div class="btn-row"><button class="btn primary side">Show side by side</button></div>`;
+    $('.side', body).onclick = () => {
+      if (!S.parallel.includes(S.peek)) S.parallel = [...S.parallel, S.peek].slice(0, 3);
+      save(); closeAllSheets(); renderRead(v);
+    };
+    openSheet(Books.refText(S.b, S.c, v) + ' · ' + m.abbr, body);
+  }
+
   // ------------------------------------------------- reference + Strong's popups
   function showRef(ref) {
     const [b, c, v, c2, v2] = ref.split('.').map(Number);
@@ -307,6 +330,8 @@
   }
 
   document.addEventListener('click', e => {
+    const pk = e.target.closest('a.peek');
+    if (pk) { e.preventDefault(); e.stopPropagation(); return showPeek(+pk.dataset.v); }
     const s = e.target.closest('sup.s, a.sref');
     if (s) { e.preventDefault(); e.stopPropagation(); return showStrongs(s.dataset.s || s.textContent.trim(), s.dataset.m); }
     const r = e.target.closest('a.ref');
@@ -365,6 +390,16 @@
     openSheet('Bibles', body);
   };
 
+  // tap-to-peek settings card (only when there's another Bible to peek into)
+  function peekCard() {
+    const others = byType('bible').filter(m => m.id !== S.bible);
+    if (!others.length) return '';
+    const sel = others.find(m => m.id === S.peek) ? S.peek : others[0].id;
+    return `<div class="card"><label class="chk"><input type="checkbox" id="optPeek" ${S.peekOn ? 'checked' : ''}> Tap a verse marker to see it in another language</label>
+      <p class="small muted" style="margin:4px 0 8px">Adds a small tag after each verse. Tap it to pop up that verse in the version below.</p>
+      <select id="peekVer">${others.map(m => `<option value="${esc(m.id)}" ${m.id === sel ? 'selected' : ''}>${esc(m.abbr)} — ${esc(m.title)}</option>`).join('')}</select></div>`;
+  }
+
   // ------------------------------------------------------------ text settings
   $('#btnText').onclick = () => {
     const body = document.createElement('div');
@@ -372,11 +407,14 @@
       <div class="card"><h3>Text size</h3><input type="range" min="14" max="32" step="1" value="${S.fs}"><div class="scripture" style="margin-top:6px">In the beginning was the Word.</div></div>
       <div class="card"><h3>Theme</h3><div class="seg">${['light', 'sepia', 'dark'].map(t => `<button data-t="${t}" class="${S.theme === t ? 'on' : ''}">${t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div></div>
       <div class="card"><label class="chk"><input type="checkbox" id="optS" ${S.strongs ? 'checked' : ''}> Show Strong's numbers</label>
-      <label class="chk"><input type="checkbox" id="optR" ${S.redLetter ? 'checked' : ''}> Words of Jesus in red</label></div>`;
+      <label class="chk"><input type="checkbox" id="optR" ${S.redLetter ? 'checked' : ''}> Words of Jesus in red</label></div>
+      ${peekCard()}`;
     $('input[type=range]', body).oninput = e => { S.fs = +e.target.value; applyLook(); save(); };
     body.addEventListener('click', e => { const t = e.target.closest('[data-t]'); if (t) { S.theme = t.dataset.t; applyLook(); save(); $$('[data-t]', body).forEach(x => x.classList.toggle('on', x === t)); } });
     $('#optS', body).onchange = e => { S.strongs = e.target.checked; applyLook(); save(); };
     $('#optR', body).onchange = e => { S.redLetter = e.target.checked; applyLook(); save(); };
+    const pko = $('#optPeek', body); if (pko) pko.onchange = e => { S.peekOn = e.target.checked; save(); if (S.tab === 'read') renderRead(); };
+    const pkv = $('#peekVer', body); if (pkv) pkv.onchange = e => { S.peek = e.target.value; save(); if (S.tab === 'read') renderRead(); };
     openSheet('Text & display', body);
   };
 

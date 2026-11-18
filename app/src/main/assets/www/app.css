@@ -49,6 +49,7 @@ input, select, textarea { font: inherit; color: var(--fg); background: var(--car
 .hl-blue .vt { background: var(--hl-blue); } .hl-pink .vt { background: var(--hl-pink); } .hl-orange .vt { background: var(--hl-orange); }
 .vt { border-radius: 3px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 sup.s { font-family: var(--sans); font-size: .55em; color: var(--strong); margin-left: 1px; cursor: pointer; padding: 0 1px; }
+a.peek { font-family: var(--sans); font-size: .58em; vertical-align: super; color: var(--accent); background: var(--sel); border-radius: 4px; padding: 1px 4px; margin-left: 4px; cursor: pointer; text-decoration: none; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
 .no-strongs sup.s { display: none; }
 .red-letter .wj { color: var(--wj); }
 .ttl { font-style: italic; color: var(--muted); }
