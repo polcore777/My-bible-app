@@ -741,4 +741,6 @@
     content.innerHTML = '<div class="empty">Something went wrong starting up:<br>' + esc(e.message) + '</div>';
   }
   window.App = { goTo, runSearch, showStrongs, setTab, state: () => S };
+  // Web app (PWA): lets the data layer re-render once a lazily-loaded module finishes opening.
+  window.__rerender = renderCurrent;
 })();

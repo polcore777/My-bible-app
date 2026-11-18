@@ -1,0 +1,17 @@
+{
+  "name": "My Bible",
+  "short_name": "My Bible",
+  "description": "Personal Bible study — KJV+ with Strong's and morphology, Ukrainian (Ohienko) with Ukrainian Strong's, commentaries and word-study dictionaries. Works offline.",
+  "start_url": "index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1b1b1b",
+  "theme_color": "#1b1b1b",
+  "lang": "en",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

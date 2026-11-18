@@ -1,0 +1,22 @@
+import { createRequire } from 'module';
+import http from 'http'; import fs from 'fs'; import path from 'path';
+const require = createRequire(import.meta.url);
+const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const ROOT = '/tmp/_site', PORT = 8778;
+const MIME = { '.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.wasm':'application/wasm','.png':'image/png','.db':'application/octet-stream' };
+const server = http.createServer((req,res)=>{ let p=decodeURIComponent(req.url.split('?')[0]); if(p==='/')p='/index.html'; const fp=path.join(ROOT,p); if(!fp.startsWith(ROOT)||!fs.existsSync(fp)||fs.statSync(fp).isDirectory()){res.writeHead(404);res.end();return;} res.writeHead(200,{'Content-Type':MIME[path.extname(fp)]||'application/octet-stream'}); fs.createReadStream(fp).pipe(res); });
+await new Promise(r=>server.listen(PORT,r));
+const browser = await chromium.launch({ executablePath:'/usr/bin/google-chrome', headless:true, args:['--no-sandbox','--disable-dev-shm-usage'] });
+const page = await browser.newPage({ viewport:{width:390,height:844}, deviceScaleFactor:2 });
+await page.goto(`http://127.0.0.1:${PORT}/index.html`,{waitUntil:'domcontentloaded'});
+await page.waitForFunction(()=>!document.getElementById('boot')&&document.querySelectorAll('#content .vs').length>0,{timeout:60000});
+await page.evaluate(()=>window.App.goTo(43,3,16));
+await page.waitForFunction(()=>(document.querySelector('#refLabel')?.textContent||'').trim()==='John 3');
+await page.waitForTimeout(400);
+await page.screenshot({ path:'/tmp/shot_read.png' });
+// Strong's card with Ukrainian
+await page.evaluate(()=>{ const el=[...document.querySelectorAll('#content sup.s')].find(e=>e.textContent.trim()==='G1063'); el.scrollIntoView(); el.click(); });
+await page.waitForSelector('#sheets .sheet',{timeout:8000}); await page.waitForTimeout(400);
+await page.screenshot({ path:'/tmp/shot_strongs.png' });
+await browser.close(); server.close();
+console.log('shots written');

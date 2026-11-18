@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>My Bible</title>
+<meta name="theme-color" content="#1b1b1b">
+<link rel="manifest" href="manifest.webmanifest">
+<!-- iOS home-screen / standalone -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My Bible">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="app.css">
+<style>
+  #boot{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:18px;background:#1b1b1b;color:#eee;font-family:-apple-system,system-ui,sans-serif;
+    text-align:center;padding:28px;transition:opacity .4s}
+  #boot.hide{opacity:0;pointer-events:none}
+  #boot .logo{font-size:30px;font-weight:600;letter-spacing:.3px}
+  #boot .sub{font-size:14px;color:#aaa;max-width:300px;line-height:1.5}
+  #boot .barwrap{width:min(320px,80vw);height:8px;background:#333;border-radius:6px;overflow:hidden}
+  #boot .bar{height:100%;width:0;background:#4c8dff;transition:width .3s}
+  #boot .status{font-size:13px;color:#8fb4ff;min-height:18px}
+  #boot .err{color:#ff8f8f;font-size:13px;max-width:320px;line-height:1.5}
+  #iosHint{position:fixed;left:12px;right:12px;bottom:12px;z-index:9998;background:#2a2a2a;color:#eee;
+    border:1px solid #444;border-radius:14px;padding:14px 16px;font:14px/1.5 -apple-system,system-ui,sans-serif;
+    box-shadow:0 8px 30px rgba(0,0,0,.4);display:none}
+  #iosHint b{color:#4c8dff}
+  #iosHint .x{float:right;color:#999;cursor:pointer;font-size:18px;margin:-4px -4px 0 8px}
+</style>
+</head>
+<body class="theme-light">
+
+<div id="boot">
+  <div class="logo">📖 My Bible</div>
+  <div class="sub" id="bootSub">Setting things up the first time…<br>This only downloads once, then works offline.</div>
+  <div class="barwrap"><div class="bar" id="bootBar"></div></div>
+  <div class="status" id="bootStatus"></div>
+  <div class="err" id="bootErr"></div>
+</div>
+
+<div id="iosHint">
+  <span class="x" onclick="this.parentNode.style.display='none'">✕</span>
+  Install this app: tap <b>Share</b> &#x2191; then <b>“Add to Home Screen.”</b>
+</div>
+
+<header id="top">
+  <button id="btnRef" class="ref-btn" aria-label="Choose book and chapter"><span id="refLabel">Genesis 1</span> <span class="caret">▾</span></button>
+  <button id="btnVersion" class="pill" aria-label="Choose Bible version">KJV</button>
+  <button id="btnText" class="icon" aria-label="Text settings">Aa</button>
+</header>
+
+<main id="content"></main>
+
+<div id="selbar" class="hidden">
+  <span id="selLabel"></span>
+  <div class="selbtns">
+    <button data-act="study">Study</button>
+    <button data-act="compare">Compare</button>
+    <button data-act="highlight">Highlight</button>
+    <button data-act="note">Note</button>
+    <button data-act="bookmark">Bookmark</button>
+    <button data-act="copy">Copy</button>
+    <button data-act="clear" aria-label="Clear selection">✕</button>
+  </div>
+</div>
+
+<nav id="tabs">
+  <button data-tab="read" class="on"><span class="ti">📖</span>Read</button>
+  <button data-tab="study"><span class="ti">📚</span>Study</button>
+  <button data-tab="search"><span class="ti">🔍</span>Search</button>
+  <button data-tab="notes"><span class="ti">📝</span>Notes</button>
+  <button data-tab="more"><span class="ti">☰</span>More</button>
+</nav>
+
+<div id="scrim" class="hidden"></div>
+<div id="sheets"></div>
+<div id="toast" class="hidden"></div>
+
+<script src="sql-wasm.js"></script>
+<script src="bridge-core.js"></script>
+<script src="bridge.js"></script>
+<script src="boot.js"></script>
+</body>
+</html>
