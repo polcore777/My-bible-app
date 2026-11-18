@@ -318,6 +318,17 @@
       p.innerHTML = `<h3>This word here</h3><div class="mod">${esc(parsing)}</div>`;
       body.appendChild(p);
     }
+    // Ukrainian (or other translated) Strong's gloss shown first, when installed
+    if (mod('ukrstrong') && used !== 'ukrstrong') {
+      const u = B('entry', 'ukrstrong', k);
+      if (u) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `<h3>${esc(abbr('ukrstrong'))}</h3>`;
+        card.appendChild(modHtml(u));
+        body.appendChild(card);
+      }
+    }
     if (html) {
       body.appendChild(modHtml(html));
       const more = document.createElement('div');
